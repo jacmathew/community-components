@@ -12,6 +12,12 @@ Below are the steps involed in clearing this alerts from alert manager.
 
 ![Velero backup get](https://user-images.githubusercontent.com/29113813/148933520-54036a8a-8a1c-4992-9fa5-37bc440476f7.png)
 
-3. You can identify the partial backups from the below command. Esure you have complete backups in the system 
+3. You can identify the partial backups from the below command. Esure you have complete backups in the system post the partial/failed backups.
+
+4. Now delete the failed/partial backup using `velero delete backup <backup_name>`
+
+5. Once the backup is deleted delete the velero pod as well using command `kubectl delete pod velero-85c75b5db-srt8k -n velero`
+
+6. Once deleted the pod will get scheduled again and alert will get cleared.
 
 
