@@ -1,16 +1,1 @@
-pulsora.aramcodigital.com	  10.231.152.164
-analytics-pulsora.aramcodigital.com  10.231.152.164
 
-spaceone.aramcodigital.com 	10.246.15.198
-console-api.aramcodigital.com  
-console-v2-api.aramcodigital.com 
-
-affinity:
-  podAntiAffinity:
-    preferredDuringSchedulingIgnoredDuringExecution:
-    - weight: 100
-      podAffinityTerm:
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/instance: defender
-        topologyKey: kubernetes.io/hostname
