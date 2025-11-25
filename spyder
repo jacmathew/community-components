@@ -1,0 +1,7 @@
+spyderUi:
+  config:
+    tenantId: "ARAMCO-DIGITAL"
+    apiAuth:
+      projectId: "P2cFCSXAhcAHeEemQI5iIzRTPOkQ"
+      clientId: "UDJjRkNTWEFoY0FIZUVlbVFJNWlJelJUUE9rUTpLMzV1eXZXMk1XNHdhMVI5dGF4WHRIOHNrRlZT"
+      clientSecret: "K35uyvW2MW4wa1R9taxXtH8skFVSdVicXKi6Y08MKJc2Hst8bH4LfAqowfdiZQc4aBuicNy"
