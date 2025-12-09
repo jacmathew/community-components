@@ -1,1 +1,70 @@
+#!/bin/bash
+
+# Replaces registry.gitlab.com with 10.240.32.133:5121
+# Pulls, tags, pushes images, and then removes them locally to save disk space
+
+# Check if image exists
+if [ ! -f "images801.txt" ]; then
+    echo "Error: images801.txt file not found!"
+    exit 1
+fi
+
+# Source and target registry info
+SOURCE_REGISTRY="registry.gitlab.com"
+TARGET_REGISTRY="10.240.32.133:5121"
+
+# Process each line in the file
+while IFS= read -r image || [ -n "$image" ]; do
+    # Skip empty lines or lines starting with #
+    if [ -z "$image" ] || [[ "$image" =~ ^[[:space:]]*# ]]; then
+        continue
+    fi
+
+    echo "Processing image: $image"
+
+    # Extract repository path and tag
+    REPO_PATH=$(echo "$image" | sed -e "s|^$SOURCE_REGISTRY/||")
+
+    # Create new image path
+    NEW_IMAGE="$TARGET_REGISTRY/$REPO_PATH"
+
+    echo "Pulling original image..."
+    docker pull "$image"
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to pull $image, skipping..."
+        continue
+    fi
+
+    echo "Tagging as $NEW_IMAGE..."
+    docker tag "$image" "$NEW_IMAGE"
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to tag $image, skipping..."
+        # Clean up pulled image even on tag failure
+        docker rmi "$image"
+        continue
+    fi
+
+    echo "Pushing to target registry..."
+    docker push "$NEW_IMAGE"
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to push $NEW_IMAGE"
+        # Clean up both images on push failure
+        docker rmi "$image" "$NEW_IMAGE"
+        continue
+    fi
+
+    echo "Successfully migrated $image to $NEW_IMAGE"
+
+    # Remove both the original and new tagged images locally
+    echo "Removing images from local storage to save disk space..."
+    docker rmi "$image" "$NEW_IMAGE"
+
+    echo "----------------------------------------"
+
+done < "images801.txt"
+
+echo "Processing complete!"
 
