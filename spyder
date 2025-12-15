@@ -1,70 +1,492 @@
-#!/bin/bash
-
-# Replaces registry.gitlab.com with 10.240.32.133:5121
-# Pulls, tags, pushes images, and then removes them locally to save disk space
-
-# Check if image exists
-if [ ! -f "images801.txt" ]; then
-    echo "Error: images801.txt file not found!"
-    exit 1
-fi
-
-# Source and target registry info
-SOURCE_REGISTRY="registry.gitlab.com"
-TARGET_REGISTRY="10.240.32.133:5121"
-
-# Process each line in the file
-while IFS= read -r image || [ -n "$image" ]; do
-    # Skip empty lines or lines starting with #
-    if [ -z "$image" ] || [[ "$image" =~ ^[[:space:]]*# ]]; then
-        continue
-    fi
-
-    echo "Processing image: $image"
-
-    # Extract repository path and tag
-    REPO_PATH=$(echo "$image" | sed -e "s|^$SOURCE_REGISTRY/||")
-
-    # Create new image path
-    NEW_IMAGE="$TARGET_REGISTRY/$REPO_PATH"
-
-    echo "Pulling original image..."
-    docker pull "$image"
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to pull $image, skipping..."
-        continue
-    fi
-
-    echo "Tagging as $NEW_IMAGE..."
-    docker tag "$image" "$NEW_IMAGE"
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to tag $image, skipping..."
-        # Clean up pulled image even on tag failure
-        docker rmi "$image"
-        continue
-    fi
-
-    echo "Pushing to target registry..."
-    docker push "$NEW_IMAGE"
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to push $NEW_IMAGE"
-        # Clean up both images on push failure
-        docker rmi "$image" "$NEW_IMAGE"
-        continue
-    fi
-
-    echo "Successfully migrated $image to $NEW_IMAGE"
-
-    # Remove both the original and new tagged images locally
-    echo "Removing images from local storage to save disk space..."
-    docker rmi "$image" "$NEW_IMAGE"
-
-    echo "----------------------------------------"
-
-done < "images801.txt"
-
-echo "Processing complete!"
-
+{
+  "directives": {
+    "worker_processes": "auto"
+  },
+  "http": {
+    "directives": {
+      "client_max_body_size": "20M"
+    },
+    "servers": [
+      {
+        "listen": {
+          "port": 8080
+        },
+        "directives": {
+          "server_name": "api-nprod.aramcodigital.com",
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/aramco-platts/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_nprod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/oauth2/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_nprod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          }
+        }
+      },
+      {
+        "listen": {
+          "port": 8443
+        },
+        "directives": {
+          "server_name": "api-nprod.aramcodigital.com",
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/aramco-platts/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_nprod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/oauth2/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_nprod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          }
+        }
+      },
+      {
+        "listen": {
+          "port": 8080
+        },
+        "directives": {
+          "server_name": "api.aramcodigital.com",
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/nawat/auth/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/digital-twin/aramco-supplychain/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/oauth2/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/aramco-platts/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          }
+        }
+      },
+      {
+        "listen": {
+          "port": 8443
+        },
+        "directives": {
+          "server_name": "api.aramcodigital.com",
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/nawat/auth/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/digital-twin/aramco-supplychain/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/oauth2/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          },
+          "/aramco-platts/api/v1": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$aramco_prod_gateway"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_buffer_size": "16K",
+              "proxy_buffers": "4 16k"
+            }
+          }
+        }
+      },
+      {
+        "listen": {
+          "port": 8080
+        },
+        "directives": {
+          "server_name": [
+            "pulsora.aramcodigital.com",
+            "analytics-pulsora.aramcodigital.com"
+          ],
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$pulsora_upstream"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90
+            }
+          }
+        }
+      },
+      {
+        "listen": {
+          "port": 8443
+        },
+        "directives": {
+          "server_name": [
+            "pulsora.aramcodigital.com",
+            "analytics-pulsora.aramcodigital.com"
+          ],
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/": {
+            "proxy_pass": {
+              "scheme": "https",
+              "upstream": "$pulsora_upstream"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90,
+              "proxy_http_version": "1.1"
+            }
+          }
+        }
+      },
+      {
+        "listen": {
+          "port": 8080,
+          "default_server": true
+        },
+        "directives": {
+          "server_name": "_",
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/": {
+            "proxy_pass": {
+              "scheme": "http",
+              "upstream": "$default_upstream"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90
+            }
+          }
+        }
+      },
+      {
+        "listen": {
+          "port": 8443,
+          "default_server": true
+        },
+        "directives": {
+          "server_name": "_",
+          "client_header_buffer_size": "8k",
+          "large_client_header_buffers": "4 64k"
+        },
+        "routes": {
+          "/": {
+            "proxy_pass": {
+              "scheme": "http",
+              "upstream": "$default_upstream"
+            },
+            "proxy_headers": {
+              "Host": "$host"
+            },
+            "directives": {
+              "proxy_connect_timeout": 90,
+              "proxy_send_timeout": 90,
+              "proxy_read_timeout": 90
+            }
+          }
+        }
+      }
+    ],
+    "upstreams": [
+      {
+        "hosts": ["default"],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "443",
+            "server": "cmdwa5h3kujicqjhluouiwv2ba.apigateway.me-jeddah-1.oci.customer-oci.com",
+            "options": []
+          }
+        ],
+        "proxy_name": "aramco_nprod_gateway"
+      },
+      {
+        "hosts": ["default"],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "443",
+            "server": "dvypxhao5yxn6iiw64xdcjy6ue.apigateway.me-jeddah-1.oci.customer-oci.com",
+            "options": []
+          }
+        ],
+        "proxy_name": "aramco_prod_gateway"
+      },
+      {
+        "hosts": ["default"],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "80",
+            "server": "127.0.0.1",
+            "options": []
+          }
+        ],
+        "proxy_name": "http_origin"
+      },
+      {
+        "hosts": ["default"],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "80",
+            "server": "127.0.0.1",
+            "options": []
+          }
+        ],
+        "proxy_name": "https_origin"
+      },
+      {
+        "hosts": [
+          "spaceone-dev.aramcodigital.com",
+          "console-v2-dev.aramcodigital.com",
+          "console-api-dev.aramcodigital.com"
+        ],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "80",
+            "server": "10.247.166.42",
+            "options": []
+          }
+        ],
+        "proxy_name": "default_upstream"
+      },
+      {
+        "hosts": [
+          "spaceone.aramcodigital.com",
+          "console-api.aramcodigital.com",
+          "console-v2.aramcodigital.com"
+        ],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "80",
+            "server": "10.246.15.198",
+            "options": []
+          }
+        ],
+        "proxy_name": "default_upstream"
+      },
+      {
+        "hosts": [
+          "dev-scdt.aramcodigital.com"
+        ],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "80",
+            "server": "10.241.6.24",
+            "options": []
+          }
+        ],
+        "proxy_name": "default_upstream"
+      },
+      {
+        "hosts": [
+          "pulsora.aramcodigital.com",
+          "analytics-pulsora.aramcodigital.com"
+        ],
+        "directives": {
+          "keepalive": "128"
+        },
+        "origins": [
+          {
+            "port": "443",
+            "server": "10.231.152.164",
+            "options": []
+          }
+        ],
+        "proxy_name": "pulsora_upstream"
+      }
+    ]
+  }
+}
